@@ -2,6 +2,9 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Collections.Generic;
+using System.Linq;
+using System.Data;
 using AnnuaireEntreprise.Dataset;
 using AnnuaireEntreprise.Dataset.AnnuaireDataSetTableAdapters;
 
@@ -28,16 +31,21 @@ namespace AnnuaireEntreprise.Forms
             _taC = taC;
         }
 
+        // Colonne delete pour la grille contacts (créée programmatiquement, contrairement à Delete qui est dans le designer pour infoContact)
+        private readonly DevExpress.XtraGrid.Columns.GridColumn _deleteContact = new DevExpress.XtraGrid.Columns.GridColumn();
+
         private void FormSociete_Load(object sender, EventArgs e)
         {
             // Charger les infoContact dans le DataSet
             _taI.Fill(_ds.infoContact);
 
             // Titre selon le mode
+            // Si on est en mode création (_societeId == 0), le titre est "Nouvelle société".
+            // Sinon, on affiche "Modification : " suivi du nom de la société récupéré depuis le DataSet.
             this.Text = _societeId == 0
                 ? "Nouvelle société"
                 : "Modification : " + _ds.societe.FindByid(_societeId).nom;
-
+            //Si on est en mode modification, on pré-remplit les champs avec les données de la société existante.
             if (_societeId > 0)
             {
                 // ── Mode modification : pré-remplir les champs ───────────────
@@ -53,77 +61,109 @@ namespace AnnuaireEntreprise.Forms
                     textEdit3.Text = soc.IsvilleNull() ? "" : soc.ville;
                 }
             }
+
+            // En mode création, aucune societe n'existe encore dans le DataSet donc la FK
+            // contact.idSociete → societe.id rejetterait toute nouvelle ligne de contact.
+            // On suspend les contraintes le temps de la saisie ; le vrai contrôle FK
+            // se fera côté SQL lors du commit.
+            if (_societeId == 0)
+                _ds.EnforceConstraints = false;
+
             // ── Binding MASTER : contacts de cette société ───────────────────
             var bsContacts = new BindingSource(_ds, "contact");
             bsContacts.Filter = "idSociete = " + (_societeId > 0 ? _societeId : -1);
             gridContacts.DataSource = bsContacts;
 
+            gridView1.OptionsBehavior.AllowAddRows = DevExpress.Utils.DefaultBoolean.True;
+            // Afficher la ligne "+" d'ajout (sinon aucune nouvelle ligne possible).
+            // C'est ce réglage — pas AllowAddRows — qui fait apparaître la ligne d'ajout,
+            // exactement comme gridView2 (Infos Contact) qui l'a dans le Designer.
+            gridView1.OptionsView.NewItemRowPosition = DevExpress.XtraGrid.Views.Grid.NewItemRowPosition.Bottom;
+            // Pré-affecter idSociete sur chaque nouvelle ligne contact
+            gridView1.InitNewRow += (s, re) =>
+                gridView1.SetRowCellValue(re.RowHandle, "idSociete", _societeId > 0 ? _societeId : -1);
+
+            // ── Colonne Delete pour la grille contacts ───────────────────────
+            gridView1.Columns.Add(_deleteContact);
+            _deleteContact.VisibleIndex = gridView1.VisibleColumns.Count;
+            _deleteContact.Caption = "";
+            _deleteContact.Width = 40;
+            _deleteContact.ColumnEdit = null;
+            _deleteContact.OptionsColumn.AllowEdit = false;
+            _deleteContact.OptionsColumn.TabStop = false;
+
+            gridView1.CustomDrawCell += (s, ce) =>
+            {
+                if (ce.Column != _deleteContact || ce.RowHandle < 0) return;
+                ce.DefaultDraw();
+                int cx = ce.Bounds.Left + ce.Bounds.Width / 2;
+                int cy = ce.Bounds.Top + ce.Bounds.Height / 2;
+                using var pen = new Pen(Color.Red, 2);
+                ce.Graphics.DrawLine(pen, cx - 5, cy - 5, cx + 5, cy + 5);
+                ce.Graphics.DrawLine(pen, cx + 5, cy - 5, cx - 5, cy + 5);
+                ce.Handled = true;
+            };
+
+            gridView1.RowCellClick += (s, ce) =>
+            {
+                if (ce.Column != _deleteContact) return;
+                if (MessageBox.Show("Supprimer ce contact ?", "Confirmation",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+                gridView1.DeleteRow(ce.RowHandle);
+                if (_societeId > 0)
+                {
+                    _taC.Update(_ds.contact);
+                    _taI.Update(_ds.infoContact);
+                }
+            };
+
             // ── Binding DETAIL : infos du contact sélectionné ────────────────
-            // Quand on clique sur un contact dans gridContacts,
-            // gridInfoContact se met à jour automatiquement via la relation FK
-            var bsInfos = new BindingSource(bsContacts,
-                "FK__infoConta__idCon__4F7CD00D");
+            var bsInfos = new BindingSource(bsContacts, "FK__infoConta__idCon__4F7CD00D");
             gridInfoContact.DataSource = bsInfos;
-            // ajouter la colonne delete
-            gridView2.Columns.Add(Delete);
 
             gridView2.OptionsBehavior.Editable = true;
+            gridView2.OptionsBehavior.AllowAddRows = DevExpress.Utils.DefaultBoolean.True;
+            // idContact est renseigné automatiquement par la relation FK (bsInfos est
+            // dérivé de bsContacts). Pas besoin de InitNewRow : c'est pour ça que la
+            // modification fonctionnait déjà. Il faut juste qu'un contact soit
+            // sélectionné dans la grille de gauche pour servir de parent.
 
+            // ── Colonne Delete pour la grille infos contact ──────────────────
+            gridView2.Columns.Add(Delete);
             Delete.VisibleIndex = gridView2.VisibleColumns.Count;
-            // Pas de titre — la croix rouge sert d'indicateur visuel
             Delete.Caption = "";
-            // Largeur fixe juste assez large pour la croix
             Delete.Width = 40;
-            // Pas d'éditeur — la cellule n'est pas interactive comme un bouton standard
             Delete.ColumnEdit = null;
-            // Empêche l'utilisateur de modifier la valeur de la cellule directement
             Delete.OptionsColumn.AllowEdit = false;
-            // Quand je vais faire entré ou tab pour ajouter une nouvelle ligne,
-            // je ne veux pas que delete soit traité comme une colonne éditable
             Delete.OptionsColumn.TabStop = false;
 
-            // CustomDrawCell : s = gridView2 (déclencheur), e = CustomRowCellDrawEventArgs
-            // e donne accès à : e.Column (colonne dessinée), e.Bounds (rectangle de la cellule),
-            // e.Graphics (surface de dessin), e.RowHandle (index de la ligne), e.Handled (court-circuite le rendu DevExpress)
-            gridView2.CustomDrawCell += (s, e) => DrawDeleteCell(e);
+            gridView2.CustomDrawCell += (s, ce) => DrawDeleteCell(ce);
 
-            // RowCellClick : s = gridView2 (déclencheur), e = RowCellClickEventArgs
-            // e donne accès à : e.Column (colonne cliquée), e.RowHandle (index de la ligne cliquée)
-            gridView2.RowCellClick += (s, e) =>
+            gridView2.RowCellClick += (s, ce) =>
             {
-                // On n'agit que si le clic est sur la colonne Delete
-                if (e.Column != Delete) return;
+                if (ce.Column != Delete) return;
                 if (MessageBox.Show("Supprimer cette information ?", "Confirmation",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
-                // Supprime la ligne du DataSet en mémoire puis synchronise avec SQL
-                gridView2.DeleteRow(e.RowHandle);
-                _taI.Update(_ds.infoContact);
+                gridView2.DeleteRow(ce.RowHandle);
+                if (_societeId > 0)
+                    _taI.Update(_ds.infoContact);
             };
-            // Après chaque mise à jour d'une ligne dans gridView2, on rafraîchit les données pour recalculer les colonnes calculées(delete par exemple)
-            gridView2.RowUpdated += (s, e) => gridView2.RefreshData();
 
             // Cacher les colonnes techniques dans la grille contacts
-            if (gridView2.Columns["id"] != null)
+            if (gridView1.Columns["id"] != null)
                 gridView1.Columns["id"].Visible = false;
-            gridView1.Columns["idSociete"].Visible = false;
+            if (gridView1.Columns["idSociete"] != null)
+                gridView1.Columns["idSociete"].Visible = false;
 
             // Cacher les colonnes techniques dans la grille infos contact
             if (gridView2.Columns["id"] != null)
                 gridView2.Columns["id"].Visible = false;
-
             if (gridView2.Columns["idContact"] != null)
                 gridView2.Columns["idContact"].Visible = false;
-
-            // Cacher les colonnes calculées qui ne doivent pas être éditables
             if (gridView2.Columns["NomSociete"] != null)
                 gridView2.Columns["NomSociete"].Visible = false;
-
-
             if (gridView2.Columns["NomContact"] != null)
                 gridView2.Columns["NomContact"].Visible = false;
-            // Connecter l'événement du bouton Delete de la grille infos contact
-            // car on ne peut pas le faire via le designer
-
         }
 
         /**
@@ -188,8 +228,8 @@ namespace AnnuaireEntreprise.Forms
             // Vérifier que les contacts ajoutés ont au moins un nom
             foreach (AnnuaireDataSet.contactRow row in _ds.contact.Rows)
             {
-                if ((row.RowState == System.Data.DataRowState.Added ||
-                     row.RowState == System.Data.DataRowState.Modified) &&
+                if ((row.RowState == DataRowState.Added ||
+                     row.RowState == DataRowState.Modified) &&
                      row.IsNull("nom"))
                 {
                     MessageBox.Show("Un contact doit avoir au moins un nom.",
@@ -238,6 +278,15 @@ namespace AnnuaireEntreprise.Forms
                         _ds.societe.AddsocieteRow(r);
                         _taS.Update(_ds.societe);
 
+                        // Affecter le vrai id de la société aux contacts ajoutés via la grille (idSociete = -1)
+                        int newId = r.id;
+                        foreach (AnnuaireDataSet.contactRow cr in _ds.contact.Rows)
+                        {
+                            if (cr.RowState != DataRowState.Deleted &&
+                                cr.idSociete == -1)
+                                cr.idSociete = newId;
+                        }
+
                         MessageBox.Show("Société créée avec succès.",
                             "Succès", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
@@ -259,29 +308,62 @@ namespace AnnuaireEntreprise.Forms
 
                     // Sauvegarder contacts et infos modifiés dans les grilles
                     /*
-                     Note important: l'ordre des Update est crucial. 
+                     Note important: l'ordre des Update est crucial.
                     On a mis à jour en premier les sociétés pour s'assurer que
                     les idSociete des contacts soient exists avant de mettre à jour les contacts.
                      */
-                    _taC.Update(_ds.contact); // 2. Ensuite les contacts (enfants de société)
+
+                    // Les relations du DataSet sont créées avec createConstraints:false
+                    // (voir AnnuaireDataset.Designer.cs) → AUCUN cascade automatique.
+                    // Quand _taC.Update remplace l'id temporaire (négatif) d'un nouveau
+                    // contact par le vrai id SQL (identity), le idContact des infoContact
+                    // enfants n'est PAS mis à jour → violation de FK côté SQL.
+                    // On capture donc la correspondance id temporaire → vrai id ajouter par moi, nouvelle ligne.
+                    var contactsAjoutes = new List<AnnuaireDataSet.contactRow>();
+                    var idsTemporaires = new Dictionary<AnnuaireDataSet.contactRow, int>();
+                    foreach (AnnuaireDataSet.contactRow cr in _ds.contact.Rows)
+                    {
+                        if (cr.RowState == DataRowState.Added)
+                        {
+                            contactsAjoutes.Add(cr);
+                            idsTemporaires[cr] = cr.id; // id temporaire avant l'Update
+                        }
+                    }
+
+                    _taC.Update(_ds.contact); // Ici que les id temporaires sont remplacés par les vrais id
+                                              // générérés par SQL Server (identity) lors de l'insertion. 
+
+                    // Après l'Update, cr.id contient le vrai id SQL. On construit la table
+                    // de correspondance ancien id (temporaire) → nouvel id (réel).
+                    var mapIds = new Dictionary<int, int>();
+                    foreach (var cr in contactsAjoutes)
+                        mapIds[idsTemporaires[cr]] = cr.id;
+
+                    // On réaffecte le vrai idContact à chaque infoContact nouvellement ajouté
+                    // qui pointait vers un id de contact temporaire.
+                    foreach (AnnuaireDataSet.infoContactRow ir in _ds.infoContact.Rows)
+                    {
+                        if (ir.RowState == DataRowState.Added &&
+                            mapIds.TryGetValue(ir.idContact, out int vraiId))
+                            ir.idContact = vraiId;
+                    }
+
                     // Si on avait fait _taI.Update() avant _taC.Update() → SQL Server retourne
                     // on aurait une erreur FK car l'infoContact référence un idContact qui n'existe pas encore
                     _taI.Update(_ds.infoContact);
                     //Si on fait la suppresion l'odre serait inverse.
 
                     transaction.Commit();
-                    connection.Close();// on ferme la connexion après le commit pour libérer les ressources
-                    // si ou utilise le using var transaction, la connexion sera fermée automatiquement.
-                    //Mais j'ai deja pas mal de lignes de code dans le try, je préfère fermer explicitement
+                    connection.Close();
+                    _ds.EnforceConstraints = true;
                     DialogResult = DialogResult.OK;
                     Close();
 
                 }
                 catch (Exception ex)
                 {
-                    //rollback si erreur lors de l'enregistrement pour annuler toutes les modifications
                     transaction.Rollback();
-                    connection.Close();// on ferme la connexion même en cas d'erreur pour libérer les ressources
+                    connection.Close();
                     MessageBox.Show("Erreur lors de l'enregistrement : " + ex.Message,
                             "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
@@ -305,9 +387,8 @@ namespace AnnuaireEntreprise.Forms
                     "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (result != DialogResult.Yes) return;
             }
-            // Annule les modifications en mémoire
-            //Par  ligne vides mais pas enregistré.
-            _ds.RejectChanges(); 
+            _ds.RejectChanges();
+            _ds.EnforceConstraints = true;
             DialogResult = DialogResult.Cancel;
             Close();
         }
