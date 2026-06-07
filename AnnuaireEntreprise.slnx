@@ -1,4 +1,4 @@
 <Solution>
-  <Project Path="AnnuaireEntreprise.Tests/AnnuaireEntreprise.Tests.csproj" />
   <Project Path="AnnuaireEntreprise/AnnuaireEntreprise.csproj" />
+  <Project Path="AnnuaireEntreprise.Tests/AnnuaireEntreprise.Tests.csproj" />
 </Solution>
