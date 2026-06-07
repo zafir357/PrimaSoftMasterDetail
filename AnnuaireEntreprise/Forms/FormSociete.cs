@@ -109,11 +109,25 @@ namespace AnnuaireEntreprise.Forms
                 if (ce.Column != _deleteContact) return;
                 if (MessageBox.Show("Supprimer ce contact ?", "Confirmation",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
-                gridView1.DeleteRow(ce.RowHandle);
+
+                // Récupérer la ligne contact AVANT de la supprimer, pour atteindre ses
+                // infoContact enfants. Les relations sont créées sans contrainte
+                // (createConstraints:false) → aucun cascade : on doit donc supprimer
+                // les enfants nous-mêmes, sinon SQL refuse le DELETE du contact (FK).
+                if (gridView1.GetRow(ce.RowHandle) is System.Data.DataRowView drv &&
+                    drv.Row is AnnuaireDataSet.contactRow contact)
+                {
+                    foreach (AnnuaireDataSet.infoContactRow info in contact.GetinfoContactRows())
+                        info.Delete();
+                    contact.Delete();
+                }
+
                 if (_societeId > 0)
                 {
-                    _taC.Update(_ds.contact);
+                    // Ordre INVERSE de l'insertion pour une suppression :
+                    // les enfants (infoContact) d'abord, puis le parent (contact).
                     _taI.Update(_ds.infoContact);
+                    _taC.Update(_ds.contact);
                 }
             };
 
