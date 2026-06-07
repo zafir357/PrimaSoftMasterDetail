@@ -49,7 +49,16 @@ par ta propre connection string. Exemples :
 - **SQL Express** : `Data Source=.\SQLEXPRESS;Initial Catalog=AnnuaireEntreprise;Integrated Security=True;TrustServerCertificate=True`
 - **SQL Server distant** : `Data Source=MON-SERVEUR;Initial Catalog=AnnuaireEntreprise;User Id=monuser;Password=monpwd;TrustServerCertificate=True`
 
-Les 3 occurrences sont dans les méthodes `InitConnection()` des classes `contactTableAdapter`, `infoContactTableAdapter`, `societeTableAdapter`.
+> ⚠️ Cette modification est écrasée si le DataSet est régénéré depuis le concepteur.
+
+
+### Option B — Reconfiguration via le concepteur (propre)
+- Ouvrir `Dataset/AnnuaireDataset.xsd` dans Visual Studio.
+-  Pour chaque TableAdapter (`societe`, `contact`, `infoContact`) : clic droit →
+   **Configurer…**, puis dans l'assistant, **Nouvelle connexion…** et pointer vers
+   votre serveur SQL.
+  - Terminer l'assistant : Visual Studio régénère `Designer.cs` avec votre chaîne.
+
 
 ### 4. Projet de démarrage
 - **CLick droit sur la solution AnnuaireEntreprise-> Configurer des projet Start-Up, Choisir AnnuaireEntreprise**
