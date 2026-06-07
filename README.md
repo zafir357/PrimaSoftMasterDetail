@@ -57,13 +57,8 @@ Le projet `AnnuaireEntreprise.Tests` contient des tests xUnit qui vérifient les
 
 ### Exécuter les tests
 
-**Depuis Visual Studio** : menu **Test > Exécuter tous les tests** (ou `Ctrl+R, A`).
+**Depuis Visual Studio** : click-droit sur le projet AnnuaireEntreprise.Tests ** > Exécuter tous les tests** (ou `Ctrl+R, A`).
 
-**Depuis le terminal** :
-
-```bash
-dotnet test AnnuaireEntreprise.Tests/AnnuaireEntreprise.Tests.csproj
-```
 
 Les tests couvrent :
 
