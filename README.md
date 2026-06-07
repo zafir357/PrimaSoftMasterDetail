@@ -37,8 +37,18 @@ Insère 5 sociétés, 11 contacts et leurs informations de contact à titre d'ex
 
 ### 3. Vérifier la chaîne de connexion
 
-La chaîne de connexion est configurée dans le **DataSet** (`Dataset/AnnuaireDataset.xsd`).  
-Si votre instance SQL Server n'est pas `(localdb)\...` par défaut, modifiez-la via le **Dataset Designer** dans Visual Studio (clic droit sur le `.xsd` > Propriétés).
+La chaîne de connexion est intégrée directement dans `Dataset/AnnuaireDataset.xsd` :
+
+```
+Data Source=localhost;Initial Catalog=AnnuaireEntreprise;Integrated Security=True;TrustServerCertificate=True
+```
+
+Si votre instance SQL Server n'est pas `localhost`, modifiez-la ainsi :
+
+1. Dans Visual Studio, double-cliquer sur `AnnuaireDataset.xsd` pour ouvrir le **Dataset Designer**
+2. Clic droit sur un TableAdapter (ex. `societeTableAdapter`) > **Configurer...**
+3. Cliquer sur **Nouvelle connexion...** et renseigner votre serveur
+4. Valider — la nouvelle chaîne sera appliquée à tous les TableAdapters
 
 ## Lancer l'application
 
