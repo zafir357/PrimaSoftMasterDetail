@@ -402,6 +402,7 @@ namespace AnnuaireEntreprise.Forms
                 if (result != DialogResult.Yes) return;
             }
             _ds.RejectChanges();
+            //Re authorise the contraint fk
             _ds.EnforceConstraints = true;
             DialogResult = DialogResult.Cancel;
             Close();
