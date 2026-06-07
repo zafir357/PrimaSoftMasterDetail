@@ -1,7 +1,7 @@
 # Annuaire Entreprise
 
-Application Windows Forms (master-detail) permettant de gérer un annuaire de contacts professionnels regroupés par société.
-
+1. Application Windows Forms (master-detail) permettant de gérer un annuaire de contacts professionnels regroupés par société.
+2. Projet Tests
 ## Prérequis
 
 - Windows 10/11
@@ -50,6 +50,10 @@ par ta propre connection string. Exemples :
 - **SQL Server distant** : `Data Source=MON-SERVEUR;Initial Catalog=AnnuaireEntreprise;User Id=monuser;Password=monpwd;TrustServerCertificate=True`
 
 Les 3 occurrences sont dans les méthodes `InitConnection()` des classes `contactTableAdapter`, `infoContactTableAdapter`, `societeTableAdapter`.
+
+### 4. Projet de démarrage
+- **CLick droit sur la solution AnnuaireEntreprise-> Configurer des projet Start-Up, Choisir AnnuaireEntreprise**
+
 
 ## Fonctionnalités
 
