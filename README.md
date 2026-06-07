@@ -61,7 +61,7 @@ par ta propre connection string. Exemples :
 
 
 ### 4. Projet de démarrage
-- **CLick droit sur la solution AnnuaireEntreprise-> Configurer des projet Start-Up, Choisir AnnuaireEntreprise**
+- **CLick droit sur la solution AnnuaireEntreprise-> Configurer projet de démarrage, Choisir AnnuaireEntreprise**
 
 
 ## Fonctionnalités
