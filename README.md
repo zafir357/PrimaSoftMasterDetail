@@ -52,7 +52,7 @@ par ta propre connection string. Exemples :
 Les 3 occurrences sont dans les méthodes `InitConnection()` des classes `contactTableAdapter`, `infoContactTableAdapter`, `societeTableAdapter`.
 
 ### 4. Projet de démarrage
-- **CLick droit sur la solution AnnuaireEntreprise-> Configurer des projet Start-Up, Choisir Annuaire Entreprise**
+- **CLick droit sur la solution AnnuaireEntreprise-> Configurer des projet Start-Up, Choisir AnnuaireEntreprise**
 
 
 ## Fonctionnalités
