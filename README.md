@@ -51,6 +51,28 @@ Ouvrir la solution `AnnuaireEntreprise.sln` dans Visual Studio, puis appuyer sur
 - **Double-clic** sur une ligne : ouvre la fiche complète de la société avec ses contacts pour modification.
 - **Petite croix Rouge sur info-contact** pour la suppression de info-contact.
 
+## Tests unitaires (AnnuaireEntreprise.Tests)
+
+Le projet `AnnuaireEntreprise.Tests` contient des tests xUnit qui vérifient les règles de validation des champs (nom de société, standard téléphonique, code postal).
+
+### Exécuter les tests
+
+**Depuis Visual Studio** : menu **Test > Exécuter tous les tests** (ou `Ctrl+R, A`).
+
+**Depuis le terminal** :
+
+```bash
+dotnet test AnnuaireEntreprise.Tests/AnnuaireEntreprise.Tests.csproj
+```
+
+Les tests couvrent :
+
+| Méthode testée | Cas valides | Cas invalides |
+|---|---|---|
+| `NomSocieteValide` | Nom non vide | Vide, espaces, null |
+| `StandardValide` | 7 chiffres exacts, vide, null | Trop court/long, lettres, espaces |
+| `CodePostalValide` | 5 chiffres exacts, vide, null | Trop court/long, lettres, espaces |
+
 ## Structure du projet
 
 ```
@@ -64,4 +86,8 @@ AnnuaireEntreprise/
 └── Scripts/
     ├── Creation_des_tables.sql
     └── Insertion.sql
+AnnuaireEntreprise.Tests/
+├── ValidationTests.cs     # Tests xUnit sur les règles de validation
+└── Helpers/
+    └── ValidationHelper.cs
 ```
