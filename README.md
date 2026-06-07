@@ -37,28 +37,25 @@ Insère 5 sociétés, 11 contacts et leurs informations de contact à titre d'ex
 
 ### 3. Vérifier la chaîne de connexion
 
-La chaîne de connexion est intégrée directement dans `Dataset/AnnuaireDataset.xsd` :
+Ouvrir le fichier `Dataset/AnnuaireDataset.Designer.cs` et remplacer les **3 occurrences** de :
 
+```csharp
+"Data Source=localhost;Initial Catalog=AnnuaireEntreprise;Integrated Security=True;TrustServerCertificate=True"
 ```
-Data Source=localhost;Initial Catalog=AnnuaireEntreprise;Integrated Security=True;TrustServerCertificate=True
-```
 
-Si votre instance SQL Server n'est pas `localhost`, modifiez-la ainsi :
+par ta propre connection string. Exemples :
 
-1. Dans Visual Studio, double-cliquer sur `AnnuaireDataset.xsd` pour ouvrir le **Dataset Designer**
-2. Clic droit sur un TableAdapter (ex. `societeTableAdapter`) > **Configurer...**
-3. Cliquer sur **Modifier la connexion...** et renseigner votre serveur
-4. Valider — la nouvelle chaîne sera appliquée à tous les TableAdapters
+- **LocalDB** : `Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=AnnuaireEntreprise;Integrated Security=True;TrustServerCertificate=True`
+- **SQL Express** : `Data Source=.\SQLEXPRESS;Initial Catalog=AnnuaireEntreprise;Integrated Security=True;TrustServerCertificate=True`
+- **SQL Server distant** : `Data Source=MON-SERVEUR;Initial Catalog=AnnuaireEntreprise;User Id=monuser;Password=monpwd;TrustServerCertificate=True`
 
-## Lancer l'application
-
-Ouvrir la solution `AnnuaireEntreprise.sln` dans Visual Studio, puis appuyer sur **F5**.
+Les 3 occurrences sont dans les méthodes `InitConnection()` des classes `contactTableAdapter`, `infoContactTableAdapter`, `societeTableAdapter`.
 
 ## Fonctionnalités
 
 - **Liste principale** : affichage des informations de contact groupées par société puis par contact, avec barre de recherche intégrée.
 - **Nouveau contact** : bouton pour ajouter un contact (et sa société si elle n'existe pas encore).
-- **Double-clic** sur une ligne : ouvre la fiche complète de la société avec ses contacts pour modification.
+- **Double-clic pour modification** sur une ligne : ouvre la fiche complète de la société avec ses contacts pour modification.
 - **Petite croix Rouge sur info-contact** pour la suppression de info-contact.
 
 ## Tests unitaires (AnnuaireEntreprise.Tests)
